@@ -102,10 +102,13 @@
   `(html
     (head
      (title "t-t-t-teach")
-     (link ((href "/teach.css") (rel "stylesheet") ( type "text/css"))))
+     (link ((href "/teach.css") (rel "stylesheet") ( type "text/css")))
+     (script ((type "text/javascript") (src "/prototype.js")))
+     (script ((type "text/javascript") (src "/scriptaculous.js")))
+     (script ((type "text/javascript") (src "/effects.js"))))
     (body ((class "all"))
           (div ((class "main"))
-               (div ((class "head")) "t-t-t-teach")
+               (div ((class "head")) (a ((href "/teach/")) "t-t-t-teach"))
                (center
                 ,body)))))
 
@@ -115,6 +118,7 @@
          (onclick ,(string-append "javascript:window.location='" url "'")))
         (a ((href ,url))
            ,(response-text resp))))
+
 
 (define (show-nodes n request)
   (local [(define (current-node) (car n))
