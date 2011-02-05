@@ -1,7 +1,7 @@
 #lang racket
 (require web-server/servlet)
 (require web-server/servlet-env)
-
+;(require "db.ss")
 
 ; a teaching web thingy where you can create your own custom teaching libraries.
 ; 
@@ -97,21 +97,16 @@
 (define (has-label? n)
   (eq? 'emtpy-label (node-label n)))
 
-
 (define (common-layout body)
   `(html
     (head
      (title "t-t-t-teach")
-     (link ((href "/teach.css") (rel "stylesheet") ( type "text/css")))
-     (script ((type "text/javascript") (src "/prototype.js")))
-     (script ((type "text/javascript") (src "/scriptaculous.js")))
-     (script ((type "text/javascript") (src "/effects.js"))))
+     (link ((href "/teach.css") (rel "stylesheet") ( type "text/css"))))
     (body ((class "all"))
           (div ((class "main"))
                (div ((class "head")) (a ((href "/teach/")) "t-t-t-teach"))
                (center
                 ,body)))))
-
 
 (define (node-resp resp url)
   `(div ((class "node-resp")
