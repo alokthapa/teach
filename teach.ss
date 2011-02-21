@@ -6,6 +6,8 @@
 (require web-server/http/cookie-parse)
 (require "structs.ss")
 
+(provide (all-defined-out))
+
 ;(require "db.ss")
 ;(require "model.ss")
 
@@ -42,13 +44,6 @@
 ; 
 ; if no cdr of a response exists, then it moves to the next askonce
 ; 
-(define (login request)
-  (response/xexpr
-   `(p "you are logged in")))
-
-(define (logout request)
-  (response/xexpr 
-   `(p "you are logged out")))
   
 (define nodes 
   '(("how do you do?" (("not bad! how about you?")) home)
@@ -68,8 +63,6 @@
      (("yes!" bonjour)
       ("not really")))))
 
-(define (start request)
-  (show-nodes nodes request))
   
 (define atom? 
    (lambda (x) 
@@ -111,7 +104,7 @@
   (eq? 'emtpy-label (node-label n)))
 
 (define (make-user-cookie usr)
-  (make-cookie "id" "alok" #:secure? #t))
+  (make-cookie (user-id usr) (user-name usr) #:secure? #t))
 
 (define (get-user-from-cookie req)
   (let* ((cooks (request-cookies req))
@@ -145,6 +138,7 @@
         (a ((href ,url))
            ,(response-text resp))))
 
+;; pages 
 (define (show-nodes n request)
   (local [(define (current-node) (car n))
           (define (response-generator embed/url)
@@ -173,6 +167,39 @@
           ((pair? n) (send/suspend/dispatch response-generator))
           (else (send/suspend/dispatch end-of-show)))))
 
+(define (login request)
+  (local [(define (parse-username bindings)
+	    (extract-binding/single 'username bindings))
+	  (define (parse-password bindings)
+	    (extract-binding/single 'password bindings))
+	  
+	  (define (login-handler request)
+	    (let* ((binds (request-bindings request))
+		   (usr (find-user (parse-username binds))))
+	      (if (and usr 
+		       (string=? (parse-password binds)
+				 (user-pwd usr)))
+		  (send/suspend/dispatch start)
+		  (send/suspend/dispatch login))))
+	  (define (response-generator make-url)
+	    (response/xexpr
+	     `(html
+	       (head 
+		(title "login"))
+	       (body 
+		(h1 "Login")
+		(form ((action ,(make-url login-handler)))
+		      (input ((name "username")))
+		      (input ((name "password")))
+		      (input ((type "submit"))))))))]
+	 (send/suspend/dispatch response-generator)))
+
+(define (start request)
+  (show-nodes nodes request))
+
+(define (logout request)
+  (response/xexpr 
+   `(p "you are logged out")))
 
 (define (page404 request)
   (response/xexpr 
@@ -185,8 +212,7 @@
        [("logout") logout]
        [else page404]))
 
-
-(define run-teach-server
+(define (run-teach-server)
   (serve/servlet teach-dispatch
                #:quit? #t
                #:listen-ip #f

@@ -4,7 +4,7 @@
 
 (define *users* (list))
 
-(define all-users *users*)
+(define (all-users) *users*)
 
 (define-struct user (id name pwd) #:mutable #:prefab)
 
@@ -16,5 +16,7 @@
 (define (find-user name)
   (findf (lambda (usr) 
 	    (string=? (user-name usr) name)) 
-	 all-users))
+	(all-users)))
 
+;;test data
+(add-user (make-user 1 "alokt" "123"))
