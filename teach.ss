@@ -4,6 +4,8 @@
 (require web-server/servlet-env)
 (require web-server/http/cookie)
 (require web-server/http/cookie-parse)
+(require "structs.ss")
+
 ;(require "db.ss")
 ;(require "model.ss")
 
@@ -40,17 +42,14 @@
 ; 
 ; if no cdr of a response exists, then it moves to the next askonce
 ; 
-
 (define (login request)
   (response/xexpr
    `(p "you are logged in")))
-
 
 (define (logout request)
   (response/xexpr 
    `(p "you are logged out")))
   
-
 (define nodes 
   '(("how do you do?" (("not bad! how about you?")) home)
     ("I'm fine thank you!!" 
@@ -114,10 +113,10 @@
 (define (make-user-cookie usr)
   (make-cookie "id" "alok" #:secure? #t))
 
-;(define (get-user-from-cookie req)
-;  (let* ((cooks (request-cookies req))
-;         (usrname (findf (lambda (c) (string=? "user" (client-cookie-name c))) cooks)))
-;    (find-user usrname)))
+(define (get-user-from-cookie req)
+  (let* ((cooks (request-cookies req))
+         (usrname (findf (lambda (c) (string=? "user" (client-cookie-name c))) cooks)))
+    (find-user usrname)))
 
 (define (login/out req)
   (let* ((cook (request-cookies req))
@@ -131,13 +130,14 @@
   `(html
     (head
      (title "t-t-t-teach")
-     (link ((href "/teach.css") (rel "stylesheet") ( type "text/css"))))
+     (link ((href "/public/teach.css") (rel "stylesheet") ( type "text/css"))))
     (body ((class "all"))
           (div ((class "main"))
                (div ((class "head"))
                     (a ((href "/teach/")) "t-t-t-teach  "))
+	       ,(login/out req))
                (center
-                ,body))))))
+                ,body)))))
 
 (define (node-resp resp url)
   `(div ((class "node-resp")
