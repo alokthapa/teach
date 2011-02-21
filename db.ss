@@ -8,4 +8,3 @@
 
 (provide (all-from-out (planet untyped/snooze:2))
          (snooze-interface-out))
-
