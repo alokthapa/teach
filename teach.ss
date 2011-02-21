@@ -104,33 +104,36 @@
   (eq? 'emtpy-label (node-label n)))
 
 (define (make-user-cookie usr)
-  (make-cookie (user-id usr) (user-name usr) #:secure? #t))
+  (make-cookie "id" (user-name usr)))
 
 (define (get-user-from-cookie req)
-  (let* ((cooks (request-cookies req))
-         (usrname (findf (lambda (c) (string=? "user" (client-cookie-name c))) cooks)))
-    (find-user usrname)))
+  (let ((cooks (request-cookies req)))
+    (if (pair? cooks)
+	(find-user (client-cookie-value (findf (lambda (c)
+			    (and (client-cookie-name c)
+				 (string=? "id" (client-cookie-name c))))
+			  cooks)))
+	#f)))
 
 (define (login/out req)
-  (let* ((cook (request-cookies req))
-         (usr (findf (lambda (c) (string=? "user" (client-cookie-name c))) cook)))
+  (let ((usr (get-user-from-cookie req)))
     (if usr
-        `(a ((href ,(teach-url logout))) "logout")
+        `(a ((href ,(teach-url logout))) ,(string-append (user-name usr)  "--logout"))
         `(a ((href ,(teach-url login))) "login"))))
 
-(define (common-layout req  body)
+(define (common-layout req body)
   (response/xexpr
-  `(html
-    (head
-     (title "t-t-t-teach")
-     (link ((href "/public/teach.css") (rel "stylesheet") ( type "text/css"))))
-    (body ((class "all"))
-          (div ((class "main"))
-               (div ((class "head"))
-                    (a ((href "/teach/")) "t-t-t-teach  "))
-	       ,(login/out req))
-               (center
-                ,body)))))
+   `(html
+     (head
+      (title "t-t-t-teach")
+      (link ((href "/public/teach.css") (rel "stylesheet") ( type "text/css"))))
+     (body ((class "all"))
+	   (div ((class "main"))
+		(div ((class "head"))
+		     (a ((href "/teach/")) "t-t-t-teach  "))
+		,(login/out req))
+	   (center
+	    ,body)))))
 
 (define (node-resp resp url)
   `(div ((class "node-resp")
@@ -179,7 +182,10 @@
 	      (if (and usr 
 		       (string=? (parse-password binds)
 				 (user-pwd usr)))
-		  (send/suspend/dispatch start)
+		  (send/suspend (lambda (k-url)
+				  (response/xexpr
+				   #:headers (map cookie->header (list (make-user-cookie usr)))
+				   `(html (body (p "welcome!"))))))
 		  (send/suspend/dispatch login))))
 	  (define (response-generator make-url)
 	    (response/xexpr
