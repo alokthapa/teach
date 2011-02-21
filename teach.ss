@@ -106,6 +106,9 @@
 (define (make-user-cookie usr)
   (make-cookie "id" (user-name usr)))
 
+(define (make-logout-cookie)
+  (make-cookie "id" "noone" ))
+
 (define (get-user-from-cookie req)
   (let ((cooks (request-cookies req)))
     (if (pair? cooks)
@@ -134,16 +137,14 @@
 		,(login/out req))
 	   (center
 	    ,body)))))
-
-(define (node-resp resp url)
-  `(div ((class "node-resp")
-         (onclick ,(string-append "javascript:window.location='" url "'")))
-        (a ((href ,url))
-           ,(response-text resp))))
-
 ;; pages 
 (define (show-nodes n request)
   (local [(define (current-node) (car n))
+	  (define (node-resp resp url)
+	    `(div ((class "node-resp")
+		   (onclick ,(string-append "javascript:window.location='" url "'")))
+		  (a ((href ,url))
+		     ,(response-text resp))))
           (define (response-generator embed/url)
             (common-layout request 
              `(div ((class "node-main"))
@@ -199,12 +200,12 @@
 		      (input ((name "password")))
 		      (input ((type "submit"))))))))]
 	 (send/suspend/dispatch response-generator)))
-
 (define (start request)
   (show-nodes nodes request))
 
 (define (logout request)
   (response/xexpr 
+   #:headers (map cookie->header (list (make-logout-cookie)))
    `(p "you are logged out")))
 
 (define (page404 request)

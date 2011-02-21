@@ -11,7 +11,8 @@
 (define-struct teachpack (id name loc) #:mutable #:prefab)
 
 (define (add-user usr)
-  (set! *users* (cons usr *users*)))
+  (unless (string=? (user-name usr) "noone")
+	  (set! *users* (cons usr *users*))))
 
 (define (find-user name)
   (findf (lambda (usr) 
