@@ -3,6 +3,13 @@ Teach...(TBNL)
 
 How to run
 
+easy way:
+
+Open DrRacket (5.1 ) and run teach.ss
+
+
+hard way:
+
 1. install Racket 5.1
 
 2. cd to where you download teach
