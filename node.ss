@@ -1,0 +1,96 @@
+#lang racket
+
+(require "structs.ss")
+(provide (all-defined-out))
+
+; a teaching web thingy where you can create your own custom teaching libraries.
+; 
+; 
+; let's call an ask-response an askonce
+; askonse contains ask and response
+; 
+; ask can contain text, pics or combinations of either.
+; 
+; response can contain text, and choices.
+; 
+; 
+; each askonse can have a label so that you can get back to it later.
+; 
+; each response leads to another askonse.
+; 
+; How would it be structured?
+; 
+; 1. you should be able to ask questions and save them to variables. 
+; 
+; for eg. you could ask a persons name and reuse it to address the person later on.
+; 
+; askonce -> list of nodes
+; ask/responsetext -> some html markup thingy 
+; car of node -> ask 
+; cdr of node -> list of possible responses
+; last of node (optional) -> label for node
+; car of response -> responsetext
+; cdr of response (optional) if atom -> go to label
+; cdr of response (optional) if list -> a node
+; 
+; 
+; if no cdr of a response exists, then it moves to the next askonce
+; 
+
+(define nodes 
+  '(("how do you do?" (("not bad! how about you?")) home)
+    ("I'm fine thank you!!" 
+     (("I don't really care!!" home)
+      ("you're welcome")))
+    ("Bonjour" (("Bonjour! Is that French?")) bonjour)
+    ("Oui! Bonjour means 'good morning' in French"
+     (("Ahh! Je comprend!")))
+    ("What do you think 'bon' in bonjour means?"
+     (("umm I don't know..." ("it means 'good'" (("ahh.."))))
+      ("I guess it means good" ("awesome" (("thanks"))))) complicatednode)
+    ("Ok now what might 'jour' mean?"
+     (("night" ("not quite" (("sorry.."))))
+      ("day! it means day!" ("awesome" (("thanks!"))))))
+    ("too complicated" 
+     (("yes!" bonjour)
+      ("not really")))))
+
+  
+(define atom? 
+   (lambda (x) 
+     (cond 
+       ((null? x) #f)
+       ((pair? x)   #f)
+       (else #t))))
+
+(define (response-text r) (car r))
+
+(define (find-node lbl)
+    (local [(define (find-lbl n)
+              (if (null? n) '()
+                  (let ((lblname (last (car n))))
+                    (cond 
+                      ((and 
+                        (atom? lblname) 
+                        (eq? lblname lbl)) n)
+                      (else (find-lbl (cdr n)))))))]
+      (find-lbl nodes)))
+
+(define (node-ask n) (first n))
+ 
+(define (response-action r)
+  (if (pair? (cdr r))
+      (cadr r)
+      '()))
+ 
+(define (node-responses n)
+  (second n))
+
+(define (node-label n)
+  (let ((lbl (last n)))
+    (if (atom? lbl)
+        lbl
+        'empty-label)))
+
+(define (has-label? n)
+  (eq? 'emtpy-label (node-label n)))
