@@ -1,0 +1,19 @@
+
+Teach...(TBNL)
+
+How to run
+
+1. install Racket 5.1
+
+2. cd to where you download teach
+
+
+3. run racket (make sure it is in your path)
+
+$> racket
+
+4. (require "teach.ss")
+   (run-teach-server)
+
+5. go to http://localhost:8000/hello
+
