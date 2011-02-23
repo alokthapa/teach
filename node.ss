@@ -26,16 +26,50 @@
 ; 
 ; askonce -> list of nodes
 ; ask/responsetext -> some html markup thingy 
-; car of node -> ask 
-; cdr of node -> list of possible responses
-; last of node (optional) -> label for node
-; car of response -> responsetext
-; cdr of response (optional) if atom -> go to label
-; cdr of response (optional) if list -> a node
-; 
-; 
-; if no cdr of a response exists, then it moves to the next askonce
-; 
+; car of node -> ask reqd
+; cdr of node -> list of possible responses reqd 
+; third of node (optional) -> assoc list containing attr (label and objects) opt
+; car of response -> responsetext reqd 
+; cdr of response is an assoc list that may have 
+;; azk -> a new azk
+;; goto -> a label to jump to
+;; score -> a score associated with the response
+;; reqobjs -> not have these objs might be harmful
+
+;; if no cdr of a response exists, then it moves to the next askonce
+
+(define new-nodes 
+  '(("how do you do?" 
+     (("not bad! how about you?")) 
+     ((label . home)))
+    ("I'm fine thank you!!" 
+     (("I don't really care!!" 
+       ((goto . home)))
+      ("you're welcome")))
+    ("Bonjour!" 
+     (("Bonjour! Is that French?")) 
+     ((label . bonjour)))
+    ("Oui! Bonjour means 'good morning' in French"
+     (("Ahh! Je comprend!")))
+    ("What do you think 'bon' in bonjour means?"
+     (("umm I don't know..." 
+       ((azk . ("it means 'good'" 
+		(("ahh.."))))))
+      ("I guess it means good"
+       ((azk . ("awesome" 
+		(("thanks")))))))
+      ((label . complicatednode)))
+    ("Ok now what might 'jour' mean?"
+     (("night" 
+       ((azk . ("not quite" 
+		(("sorry.."))))))
+      ("day! it means day!" 
+       ((azk . ("awesome" 
+	       (("thanks!"))))))))
+    ("too complicated" 
+     (("yes!" 
+       ((goto . bonjour)))
+      ("not really")))))
 
 (define nodes 
   '(("how do you do?" (("not bad! how about you?")) home)
@@ -55,7 +89,62 @@
      (("yes!" bonjour)
       ("not really")))))
 
-  
+(define (azk-q n) (car n))
+(define (azk-rezps n) (cadr n))
+
+(define (azk-assoc n)
+  (if (>  (length n) 2)
+      (caddr n)
+      #f))
+(define (azk-assoc-find x n)
+  (when (azk-assoc n)
+	(let ((lbl (assoc x (azk-assoc n))))
+	  (if lbl
+	      (cdr lbl)
+	      #f))))
+
+(define (azk-lbl n)
+  (azk-assoc-find 'label n))
+
+(define (azk-obj n)
+  (azk-assoc-find 'obj n))
+
+;;only top level azks can be found for now
+(define (find-azk lbl n)
+  (memf (lambda (az)
+	   (eq? (azk-lbl az) lbl)) n))
+		
+(define (rezp-text r)
+  (car r))
+
+(define (rezp-assoc r)
+  (if (> (length r) 1)
+      (cadr r)
+      #f))
+
+(define (rezp-assoc-find x r)
+  (if (rezp-assoc r)
+      (let ((val (findf (lambda (ass) 
+			  (eq? (car ass) x))
+			(rezp-assoc r))))
+	(if val 
+	    (cdr val)
+	    #f))
+      #f))
+
+(define (rezp-lbl r)
+  (rezp-assoc-find 'goto r))
+
+(define (rezp-azk r)
+  (rezp-assoc-find 'azk r))
+
+;;only one of these can be true
+(define (rezp-action r)
+  (or (rezp-lbl r) (rezp-azk r) '()))
+
+(define (rezp-needs r)
+  (rezp-assoc-find 'needs r))
+
 (define atom? 
    (lambda (x) 
      (cond 

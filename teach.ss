@@ -44,6 +44,41 @@
 	   (center
 	    ,body)))))
 ;; pages 
+
+(define (show-nodz st n request)
+  (local [(define (azk-curr) (car n))
+	  (define (node-rezp resp url)
+	    `(div ((class "node-resp")
+		   (onclick ,(string-append "javascript:window.locatino='" url "'")))
+		  (a ((href ,url))
+		     ,(rezp-text resp))))
+	  (define (response-generator embed/url)
+	    (common-layout 
+	     request
+	     `(div ((class "node-main"))
+		   (div ((class "node-ask"))
+			,(azk-q (azk-curr)))
+		   (div ((class "nodes-resps"))
+                        ,@(map (lambda (r)
+                                 (let ((em (embed/url (new-node-location r))))
+                                   (node-rezp r em)))
+			       (azk-rezps (azk-curr)))))))
+          (define (end-of-show needless)
+            (common-layout request
+             `(div ((class "node-main"))
+                   (div ((class "node-ask"))
+                        (p "end of class")))))
+          (define (new-node-location resp)
+            (let ((action (rezp-action resp)))
+              (lambda (req)
+                (cond
+                 ((null? action) (show-nodz st (cdr n) req))
+                 ((atom? action) (show-nodz st (find-azk action new-nodes) req))
+                 ((pair? action) (show-nodz st (cons action (cdr n)) req))))))]
+	   (cond
+	    ((pair? n) (send/suspend/dispatch response-generator))
+	    (else (send/suspend/dispatch end-of-show)))))
+			   
 (define (show-nodes n request)
   (local [(define (current-node) (car n))
 	  (define (node-resp resp url)
@@ -108,7 +143,7 @@
 	 (send/suspend/dispatch response-generator)))
 
 (define (start request)
-  (show-nodes nodes request))
+  (show-nodz #f new-nodes request))
 
 (define (logout request)
   (response/xexpr 
@@ -126,6 +161,8 @@
        [("logout") logout]
        [else page404]))
 
+
+;;TODO extra-files-path is not working, so no css is being loaded at the moment, however we could always run them in xginx or s;;3 buckets so no big deal, though would be nice if we get it to work.
 (define (run-teach-server)
   (serve/servlet teach-dispatch
                #:quit? #t
