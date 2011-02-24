@@ -34,12 +34,12 @@
   (response/xexpr
    `(html
      (head
-      (title "t-t-t-teach")
+      (title "Satori")
       (link ((href "/teach.css") (rel "stylesheet") ( type "text/css"))))
      (body ((class "all"))
 	   (div ((class "main"))
 		(div ((class "head"))
-		     (a ((href "/hello")) "t-t-t-teach  "))
+		     (a ((href "/hello")) "satori "))
 		,(login/out req))
 	   (center
 	    ,body)))))
@@ -120,8 +120,21 @@
 	 (send/suspend/dispatch response-generator)))
 
 ;;st -> state is a list of score and objs collected. 
-(define (start request)
-  (show-nodz (list 'no-score-value (list)) math-nodes math-nodes  request))
+
+
+(define (welcome request)
+  (local [(define (response-generator make-url)
+	    (common-layout 
+	     request 
+	     `(div 
+	       (div (a ((href ,(make-url (lambda (req) (nodestart math-nodes req)))))
+		       "math problems"))
+	       (div (a ((href ,(make-url (lambda (req) (nodestart new-nodes req)))))
+		       "learning french example")))))]
+	 (send/suspend/dispatch response-generator)))
+
+(define (nodestart n request)
+  (show-nodz (list 'no-score-value (list)) n n request))
 
 (define (logout request)
   (response/xexpr 
@@ -134,7 +147,7 @@
 
 (define-values (teach-dispatch teach-url)
       (dispatch-rules
-       [("hello") start]
+       [("hello") welcome]
        [("login") login]
        [("logout") logout]
        [else page404]))
