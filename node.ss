@@ -79,25 +79,6 @@
      (("3" ((score . #t)))
       ("4")))))
 
-
-(define nodes 
-  '(("how do you do?" (("not bad! how about you?")) home)
-    ("I'm fine thank you!!" 
-     (("I don't really care!!" home)
-      ("you're welcome")))
-    ("Bonjour" (("Bonjour! Is that French?")) bonjour)
-    ("Oui! Bonjour means 'good morning' in French"
-     (("Ahh! Je comprend!")))
-    ("What do you think 'bon' in bonjour means?"
-     (("umm I don't know..." ("it means 'good'" (("ahh.."))))
-      ("I guess it means good" ("awesome" (("thanks"))))) complicatednode)
-    ("Ok now what might 'jour' mean?"
-     (("night" ("not quite" (("sorry.."))))
-      ("day! it means day!" ("awesome" (("thanks!"))))))
-    ("too complicated" 
-     (("yes!" bonjour)
-      ("not really")))))
-
 (define atom? 
    (lambda (x) 
      (not (or (null? x) (pair? x)))))
