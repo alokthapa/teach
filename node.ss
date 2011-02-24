@@ -98,6 +98,10 @@
      (("yes!" bonjour)
       ("not really")))))
 
+(define atom? 
+   (lambda (x) 
+     (not (or (null? x) (pair? x)))))
+
 (define (azk-q n) (car n))
 (define (azk-rezps n) (cadr n))
 
@@ -158,41 +162,4 @@
 (define (rezp-needs r)
   (rezp-assoc-find 'needs r))
 
-(define atom? 
-   (lambda (x) 
-     (cond 
-       ((null? x) #f)
-       ((pair? x)   #f)
-       (else #t))))
 
-(define (response-text r) (car r))
-
-(define (find-node lbl)
-    (local [(define (find-lbl n)
-              (if (null? n) '()
-                  (let ((lblname (last (car n))))
-                    (cond 
-                      ((and 
-                        (atom? lblname) 
-                        (eq? lblname lbl)) n)
-                      (else (find-lbl (cdr n)))))))]
-      (find-lbl nodes)))
-
-(define (node-ask n) (first n))
- 
-(define (response-action r)
-  (if (pair? (cdr r))
-      (cadr r)
-      '()))
- 
-(define (node-responses n)
-  (second n))
-
-(define (node-label n)
-  (let ((lbl (last n)))
-    (if (atom? lbl)
-        lbl
-        'empty-label)))
-
-(define (has-label? n)
-  (eq? 'emtpy-label (node-label n)))

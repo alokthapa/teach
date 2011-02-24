@@ -85,39 +85,6 @@
 	       (send/suspend/dispatch response-generator)
 	       (send/suspend/dispatch end-of-show))))
 
-(define (show-nodes n request)
-  (local [(define (current-node) (car n))
-	  (define (node-resp resp url)
-	    `(div ((class "node-resp")
-		   (onclick ,(string-append "javascript:window.location='" url "'")))
-		  (a ((href ,url))
-		     ,(response-text resp))))
-          (define (response-generator embed/url)
-            (common-layout request 
-             `(div ((class "node-main"))
-                   (div ((class "node-ask"))
-                        ,(node-ask (current-node)))
-                   (div ((class "nodes-resps"))
-                        ,@(map (lambda (r)
-                                 (let ((em (embed/url (new-node-location r))))
-                                   (node-resp  r (embed/url (new-node-location r)))))
-                                 (node-responses (current-node)))))))
-          (define (end-of-show needless)
-            (common-layout request
-             `(div ((class "node-main"))
-                   (div ((class "node-ask"))
-                        (p "end of class")))))
-          (define (new-node-location resp)
-            (let ((action (response-action resp)))
-              (lambda (req)
-                (cond
-                 ((null? action) (show-nodes (cdr n) req))
-                 ((atom? action) (show-nodes (find-node action) req))
-                 ((pair? action) (show-nodes (cons action (cdr n)) req))))))]
-         (cond
-          ((pair? n) (send/suspend/dispatch response-generator))
-          (else (send/suspend/dispatch end-of-show)))))
-
 (define (login request)
   (local [(define (parse-username bindings)
 	    (extract-binding/single 'username bindings))
@@ -167,7 +134,6 @@
        [("login") login]
        [("logout") logout]
        [else page404]))
-
 
 ;;TODO extra-files-path is not working, so no css is being loaded at the moment, however we could always run them in xginx or s;;3 buckets so no big deal, though would be nice if we get it to work.
 (define (run-teach-server)
