@@ -45,11 +45,11 @@
 	    ,body)))))
 ;; pages 
 
-(define (show-nodz st n request)
+(define (show-nodz st n orig-nodes request)
   (local [(define (azk-curr) (car n))
 	  (define (node-rezp resp url)
 	    `(div ((class "node-resp")
-		   (onclick ,(string-append "javascript:window.locatino='" url "'")))
+		   (onclick ,(string-append "javascript:window.location='" url "'")))
 		  (a ((href ,url))
 		     ,(rezp-text resp))))
 	  (define (response-generator embed/url)
@@ -63,22 +63,28 @@
                                  (let ((em (embed/url (new-node-location r))))
                                    (node-rezp r em)))
 			       (azk-rezps (azk-curr)))))))
-          (define (end-of-show needless)
-            (common-layout request
-             `(div ((class "node-main"))
-                   (div ((class "node-ask"))
-                        (p "end of class")))))
+	  (define (score1 st)
+	    (list (+ 1 (car st))
+		  (cdr st)))
           (define (new-node-location resp)
-            (let ((action (rezp-action resp)))
+            (let ((action (rezp-action resp))
+		  (newst (if (scores? resp) (score1 st) st)))
               (lambda (req)
                 (cond
-                 ((null? action) (show-nodz st (cdr n) req))
-                 ((atom? action) (show-nodz st (find-azk action new-nodes) req))
-                 ((pair? action) (show-nodz st (cons action (cdr n)) req))))))]
-	   (cond
-	    ((pair? n) (send/suspend/dispatch response-generator))
-	    (else (send/suspend/dispatch end-of-show)))))
-			   
+                 ((null? action) (show-nodz newst (cdr n) orig-nodes req))
+                 ((atom? action) (show-nodz newst (find-azk action orig-nodes) orig-nodes req))
+                 ((pair? action) (show-nodz newst (cons action (cdr n)) orig-nodes req))))))
+          (define (end-of-show needless)
+            (common-layout 
+	     request
+             `(div ((class "node-main"))
+                   (div ((class "node-ask"))
+                        (p "end of class")
+			(p ,(string-append "your score is " (number->string (car st))))))))]
+	   (if (pair? n)
+	       (send/suspend/dispatch response-generator)
+	       (send/suspend/dispatch end-of-show))))
+
 (define (show-nodes n request)
   (local [(define (current-node) (car n))
 	  (define (node-resp resp url)
@@ -117,7 +123,6 @@
 	    (extract-binding/single 'username bindings))
 	  (define (parse-password bindings)
 	    (extract-binding/single 'password bindings))
-	  
 	  (define (login-handler request)
 	    (let* ((binds (request-bindings request))
 		   (usr (find-user (parse-username binds))))
@@ -142,8 +147,10 @@
 		      (input ((type "submit"))))))))]
 	 (send/suspend/dispatch response-generator)))
 
+
+;;st -> state is a list of score and objs collected. 
 (define (start request)
-  (show-nodz #f new-nodes request))
+  (show-nodz (list 0 (list)) new-nodes new-nodes  request))
 
 (define (logout request)
   (response/xexpr 

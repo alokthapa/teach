@@ -71,6 +71,15 @@
        ((goto . bonjour)))
       ("not really")))))
 
+(define math-nodes
+  '(("1+1 = ?"
+     (("2" ((score . #t)))
+      ("3")))
+    ("1 + 2 = ?"
+     (("3" ((score . #t)))
+      ("4")))))
+
+
 (define nodes 
   '(("how do you do?" (("not bad! how about you?")) home)
     ("I'm fine thank you!!" 
@@ -96,6 +105,7 @@
   (if (>  (length n) 2)
       (caddr n)
       #f))
+
 (define (azk-assoc-find x n)
   (when (azk-assoc n)
 	(let ((lbl (assoc x (azk-assoc n))))
@@ -137,6 +147,9 @@
 
 (define (rezp-azk r)
   (rezp-assoc-find 'azk r))
+
+(define (scores? r)
+  (rezp-assoc-find 'score r))
 
 ;;only one of these can be true
 (define (rezp-action r)
