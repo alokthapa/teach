@@ -64,8 +64,10 @@
                                    (node-rezp r em)))
 			       (azk-rezps (azk-curr)))))))
 	  (define (score1 st)
-	    (list (+ 1 (car st))
-		  (cdr st)))
+	    (if (eq? (car st) 'no-score-value)
+		(list 1 (cdr st))
+		(list (+ 1 (car st))
+		      (cdr st))))
           (define (new-node-location resp)
             (let ((action (rezp-action resp))
 		  (newst (if (scores? resp) (score1 st) st)))
@@ -80,7 +82,10 @@
              `(div ((class "node-main"))
                    (div ((class "node-ask"))
                         (p "end of class")
-			(p ,(string-append "your score is " (number->string (car st))))))))]
+			(p ,(if (eq? (car st) 'no-score-value) 
+				""
+				(string-append "your score is " (number->string (car st)))))))))]
+
 	   (if (pair? n)
 	       (send/suspend/dispatch response-generator)
 	       (send/suspend/dispatch end-of-show))))
@@ -114,10 +119,9 @@
 		      (input ((type "submit"))))))))]
 	 (send/suspend/dispatch response-generator)))
 
-
 ;;st -> state is a list of score and objs collected. 
 (define (start request)
-  (show-nodz (list 0 (list)) new-nodes new-nodes  request))
+  (show-nodz (list 'no-score-value (list)) math-nodes math-nodes  request))
 
 (define (logout request)
   (response/xexpr 
