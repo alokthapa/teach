@@ -35,14 +35,14 @@
    `(html
      (head
       (title "Satori")
-      (link ((href "/teach.css") (rel "stylesheet") ( type "text/css"))))
+      (link ((href "http://dl.dropbox.com/u/121008/teach.css") (rel "stylesheet") ( type "text/css"))))
      (body ((class "all"))
 	   (div ((class "main"))
 		(div ((class "head"))
-		     (a ((href "/hello")) "satori "))
-		,(login/out req))
+		     (a ((href "/hello")) "satori ")
+		     ,(login/out req))
 	   (center
-	    ,body)))))
+	    ,body))))))
 ;; pages 
 
 (define (show-nodz st n orig-nodes request)
@@ -126,7 +126,7 @@
   (local [(define (response-generator make-url)
 	    (common-layout 
 	     request 
-	     `(div 
+	     `(div ((class "welcome-div"))
 	       (div (a ((href ,(make-url (lambda (req) (nodestart math-nodes req)))))
 		       "math problems"))
 	       (div (a ((href ,(make-url (lambda (req) (nodestart new-nodes req)))))

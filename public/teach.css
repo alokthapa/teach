@@ -1,5 +1,8 @@
 
-
+.welcome-div div a{
+    text-decoration:none;
+    color: white;
+}
 
 
 .node-main{
@@ -14,7 +17,7 @@
     padding:50px;
     margin:10px;
     background-color:white;
-    min-height:250px;
+    min-height:200px;
 
 }
 
