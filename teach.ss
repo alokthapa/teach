@@ -58,11 +58,13 @@
 	     `(div ((class "node-main"))
 		   (div ((class "node-ask"))
 			,(azk-q (azk-curr)))
-		   (div ((class "nodes-resps"))
-                        ,@(map (lambda (r)
-                                 (let ((em (embed/url (new-node-location r))))
-                                   (node-rezp r em)))
-			       (azk-rezps (azk-curr)))))))
+		   ,(if (azk-rezps? (azk-curr))
+			 `(div ((class "nodes-resps"))
+			      ,@(map (lambda (r)
+				       (let ((em (embed/url (new-node-location r))))
+					 (node-rezp r em)))
+				     (azk-rezps (azk-curr))))
+			 `(p)))))
 	  (define (score1 st)
 	    (if (eq? (car st) 'no-score-value)
 		(list 1 (cdr st))
@@ -74,8 +76,12 @@
               (lambda (req)
                 (cond
                  ((null? action) (show-nodz newst (cdr n) orig-nodes req))
-                 ((atom? action) (show-nodz newst (find-azk action orig-nodes) orig-nodes req))
+                 ((atom? action) 
+		  (cond 
+		   ((eq? action 'home) (show-nodz newst orig-nodes orig-nodes req))
+		   (else ((show-nodz newst (find-azk action orig-nodes) orig-nodes req)))))
                  ((pair? action) (show-nodz newst (cons action (cdr n)) orig-nodes req))))))
+
           (define (end-of-show needless)
             (common-layout 
 	     request
@@ -85,7 +91,6 @@
 			(p ,(if (eq? (car st) 'no-score-value) 
 				""
 				(string-append "your score is " (number->string (car st)))))))))]
-
 	   (if (pair? n)
 	       (send/suspend/dispatch response-generator)
 	       (send/suspend/dispatch end-of-show))))
@@ -129,6 +134,9 @@
 	     `(div ((class "welcome-div"))
 	       (div (a ((href ,(make-url (lambda (req) (nodestart math-nodes req)))))
 		       "math problems"))
+	       (div (a ((href ,(make-url (lambda (req) (nodestart angry-birds req)))))
+		       "angry birds problems"))
+
 	       (div (a ((href ,(make-url (lambda (req) (nodestart new-nodes req)))))
 		       "learning french example")))))]
 	 (send/suspend/dispatch response-generator)))
@@ -150,6 +158,7 @@
        [("hello") welcome]
        [("login") login]
        [("logout") logout]
+       [("angry") (lambda (req) (nodestart angry-birds req))]
        [else page404]))
 
 ;;TODO extra-files-path is not working, so no css is being loaded at the moment, however we could always run them in xginx or s;;3 buckets so no big deal, though would be nice if we get it to work.

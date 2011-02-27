@@ -40,8 +40,8 @@
 
 (define new-nodes 
   '(("how do you do?" 
-     (("not bad! how about you?")) 
-     ((label . home)))
+     (("not bad! how about you?")))
+    ("stop right here")
     ("I'm fine thank you!!" 
      (("I don't really care!!" 
        ((goto . home)))
@@ -79,11 +79,40 @@
      (("3" ((score . #t)))
       ("4")))))
 
+(define angry-birds
+  '(("Do you feel like you're good for nothing?"
+     (("Yes"
+       ((azk . ("Are you kinda big?"
+		(("Yes" ((azk . ("You're the big red one!"))))
+		 ("No" ((azk . ("You're the small red one!")))))))))
+      ("No, I feel quite important!")))
+    ("Do you feel like you're going to explode when you're angry?"
+     (("Yes"
+       ((azk . ("Ahh... you're the black bomb one then..."))))
+      ("Nope")))
+    ("Do you poop a lot when you're angry?"
+     (("Yes"
+       ((azk . (" well then you're the poopy white one!"))))
+      ("No, I poop but not when I'm angry!")))
+    ("Are you schizophrenic by any chance"
+     (("Yes how do you know?"
+       ((azk . ("You're the small blue one!!"))))
+      ("NO! Don't insult me!")))
+    ("Are you better when you do stuff backwards??"
+     (("Yes"
+       ((azk . ("Well you're the wierd one that comes back like a boomarang!"))))
+      ("Nope!")))
+    ("Well then you're the yellow one!")))
+    
+
+     
+
 (define atom? 
    (lambda (x) 
      (not (or (null? x) (pair? x)))))
 
 (define (azk-q n) (car n))
+(define (azk-rezps? n) (> (length n) 1)) 
 (define (azk-rezps n) (cadr n))
 
 (define (azk-assoc n)
