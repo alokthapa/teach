@@ -4,8 +4,10 @@
 (require web-server/servlet-env)
 (require web-server/http/cookie)
 (require web-server/http/cookie-parse)
+(require xml)
 (require "node.ss")
 (require "structs.ss")
+
 
 (provide (all-defined-out))
 
@@ -39,11 +41,16 @@
      (body ((class "all"))
 	   (div ((class "main"))
 		(div ((class "head"))
-		     (a ((href "/hello")) "satori ")
-		     ,(login/out req))
+		     (a ((href "/hello")) "satori "))
+;		     ,(login/out req))
 	   (center
 	    ,body))))))
-;; pages 
+;; pages
+
+
+(define (convert-to-xexpr text)
+  (string->xexpr text))
+;  (xml->xexpr (document-element (read-xml (open-input-string text)))))
 
 (define (show-nodz st n orig-nodes request)
   (local [(define (azk-curr) (car n))
@@ -51,13 +58,14 @@
 	    `(div ((class "node-resp")
 		   (onclick ,(string-append "javascript:window.location='" url "'")))
 		  (a ((href ,url))
-		     ,(rezp-text resp))))
+                     ,(convert-to-xexpr (rezp-text resp)))))
+
 	  (define (response-generator embed/url)
 	    (common-layout 
 	     request
 	     `(div ((class "node-main"))
 		   (div ((class "node-ask"))
-			,(azk-q (azk-curr)))
+                        ,(convert-to-xexpr (azk-q (azk-curr))))
 		   ,(if (azk-rezps? (azk-curr))
 			 `(div ((class "nodes-resps"))
 			      ,@(map (lambda (r)
@@ -130,9 +138,9 @@
 (define (welcome request)
   (local [(define (response-generator make-url)
 	    (common-layout 
-	     request 
+	     request
 	     `(div ((class "welcome-div"))
-	       (div (a ((href ,(make-url (lambda (req) (nodestart math-nodes req)))))
+               (div (a ((href ,(make-url (lambda (req) (nodestart math-nodes req)))))
 		       "math problems"))
 	       (div (a ((href ,(make-url (lambda (req) (nodestart angry-birds req)))))
 		       "angry birds problems"))

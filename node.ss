@@ -1,7 +1,34 @@
 #lang racket
-
 (require "structs.ss")
+(require racket/system)
 (provide (all-defined-out))
+
+;;utility fns for markdown
+
+(require racket/system)
+
+(provide (all-defined-out))
+
+(define (get-markdown-port text)
+  (car (process (string-append "echo \"" text "\" | perl /Users/alokthapa/hacking/scheme/teach/Markdown.pl -html4tags"))))
+
+(define (markdown text)
+  (call/cc (lambda (ezit)
+             (let ((inputport (get-markdown-port text))
+                   (out-value ""))
+               (letrec ((A (lambda ()
+                             (let ((val (read-line inputport)))
+                               (if (eof-object? val)
+                                   (ezit out-value)
+                                   (begin
+                                     (display val)
+                                     (set! out-value (string-append out-value val))
+                                     (A)))))))
+                 (A))))))
+
+
+
+
 
 ; a teaching web thingy where you can create your own custom teaching libraries.
 ; 
@@ -111,7 +138,7 @@
    (lambda (x) 
      (not (or (null? x) (pair? x)))))
 
-(define (azk-q n) (car n))
+(define (azk-q n)  (markdown (car n)))
 (define (azk-rezps? n) (> (length n) 1)) 
 (define (azk-rezps n) (cadr n))
 
@@ -139,7 +166,7 @@
 	   (eq? (azk-lbl az) lbl)) n))
 		
 (define (rezp-text r)
-  (car r))
+  (markdown (car r)))
 
 (define (rezp-assoc r)
   (if (> (length r) 1)
