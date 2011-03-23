@@ -7,6 +7,8 @@
 (require xml)
 (require "node.ss")
 (require "structs.ss")
+(require "parse.ss")
+
 
 
 (provide (all-defined-out))
@@ -166,7 +168,7 @@
        [("hello") welcome]
        [("login") login]
        [("logout") logout]
-       [("angry") (lambda (req) (nodestart angry-birds req))]
+       [("angry") (lambda (req) (nodestart parsed-angry req))]
        [else page404]))
 
 ;;TODO extra-files-path is not working, so no css is being loaded at the moment, however we could always run them in xginx or s;;3 buckets so no big deal, though would be nice if we get it to work.

@@ -21,7 +21,7 @@
                                (if (eof-object? val)
                                    (ezit out-value)
                                    (begin
-                                     (display val)
+                                    
                                      (set! out-value (string-append out-value val))
                                      (A)))))))
                  (A))))))
@@ -65,10 +65,13 @@
 
 ;; if no cdr of a response exists, then it moves to the next askonce
 
+(define-struct qnode (text responses (label #:auto)))
+(define-struct qresp (text (node #:auto) (score #:auto) (goto #:auto))) 
+
+
 (define new-nodes 
   '(("how do you do?" 
      (("not bad! how about you?")))
-    ("stop right here")
     ("I'm fine thank you!!" 
      (("I don't really care!!" 
        ((goto . home)))
@@ -106,6 +109,9 @@
      (("3" ((score . #t)))
       ("4")))))
 
+
+(define qnode (text responses label))
+(define qresp (text node score goto)) 
 (define angry-birds
   '(("Do you feel like you're good for nothing?"
      (("Yes"
@@ -130,9 +136,6 @@
        ((azk . ("Well you're the wierd one that comes back like a boomarang!"))))
       ("Nope!")))
     ("Well then you're the yellow one!")))
-    
-
-     
 
 (define atom? 
    (lambda (x) 
