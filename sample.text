@@ -1,32 +1,33 @@
 
-Q:Do you feel like you're good for nothing?
-A:Yes
-    Q:Are you kinda big?
-    A:Yes
-        Q:You're the big red one!
-    A:No
-        Q:You're the small red one!
-A:No, I feel quite important
 
-Q:Do you feel like you're going to explode when you're angry?
-A:Yes
-    Q:Ahh... you're the black bomb one then...
-A:Nope
+?Do you feel like you're good for nothing?
+@Yes
+    ?Are you kinda big?
+    @Yes
+        ?You're the big red one!
+    @No
+        ?You're the small red one!
+@No, I feel quite important
 
-Q:Do you poop a lot when you're angry?
-A:Yes
-    Q:well then you're the poopy white one!
-A:No, I poop but not when I'm angry!
+?Do you feel like you're going to explode when you're angry?
+@Yes
+    ?Ahh... you're the black bomb one then...
+@Nope
 
-Q:Are you schizophrenic by any chance
-A:Yes how do you know?
-    Q:You're the small blue one!!
-A:No! Don't insult me!
+?Do you poop a lot when you're angry?
+@Yes
+    ?well then you're the poopy white one!
+@No, I poop but not when I'm angry!
 
-Q:Are you better when you do stuff backwards?
-A:Yes
-    Q:Well you're the wierd one that comes back like a boomarang!
-A:Nope!
+?Are you schizophrenic by any chance
+@Yes how do you know?
+    ?You're the small blue one!!
+@No! Don't insult me!
 
-Q:Well then you're the yellow one!
+?Are you better when you do stuff backwards?
+@Yes
+    ?Well you're the wierd one that comes back like a boomarang!
+@Nope!
+
+?Well then you're the yellow one!
 
