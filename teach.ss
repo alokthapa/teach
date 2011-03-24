@@ -15,8 +15,11 @@
 
 ;--markdown related
 
+(define (get-markdown-path)
+  (path->string (build-path (current-directory) "Markdown.pl")))
+
 (define (get-markdown-port text)
-  (car (process (string-append "echo \"" text "\" | perl /Users/alokthapa/hacking/scheme/teach/Markdown.pl -html4tags"))))
+  (car (process (string-append "echo \"" text "\" | perl " (get-markdown-path) " -html4tags"))))
 
 (define (markdown text) (string-append "<div>" (markdown1 text) "</div>"))
 (define (markdown1 text)
