@@ -16,8 +16,7 @@
 ;--markdown related
 
 (define (get-markdown-path)
-  (path->string (build-path (current-directory) "Markdown.pl")))
-
+  "~/markdown/Markdown.pl")
 (define (get-markdown-port text)
   (car (process (string-append "echo \"" text "\" | perl " (get-markdown-path) " -html4tags"))))
 
