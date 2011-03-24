@@ -65,9 +65,6 @@
 
 ;; if no cdr of a response exists, then it moves to the next askonce
 
-(define-struct qnode (text responses (label #:auto)))
-(define-struct qresp (text (node #:auto) (score #:auto) (goto #:auto))) 
-
 
 (define new-nodes 
   '(("how do you do?" 
@@ -110,8 +107,6 @@
       ("4")))))
 
 
-(define qnode (text responses label))
-(define qresp (text node score goto)) 
 (define angry-birds
   '(("Do you feel like you're good for nothing?"
      (("Yes"

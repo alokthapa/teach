@@ -21,7 +21,7 @@
 @I guess it means good
     ?awesome
     @thanks
-@Ok now what might 'jour' mean?
+?Ok now what might 'jour' mean?
 @night
     ?not quite
     @sorry...
@@ -32,13 +32,6 @@
 @[greet]yes
 @not really
 ")
-(define math-nodes
-  '(("1+1 = ?"
-     (("2" ((score . #t)))
-      ("3")))
-    ("1 + 2 = ?"
-     (("3" ((score . #t)))
-      ("4")))))
 
 (define mathtoo
 "
@@ -49,39 +42,6 @@
 +3
 @4
 ")
-
-(define new-nodes 
-  '(("how do you do?" 
-     (("not bad! how about you?")))
-    ("I'm fine thank you!!" 
-     (("I don't really care!!" 
-       ((goto . home)))
-      ("you're welcome")))
-    ("Bonjour!" 
-     (("Bonjour! Is that French?")) 
-     ((label . bonjour)))
-    ("Oui! Bonjour means 'good morning' in French"
-     (("Ahh! Je comprend!")))
-    ("What do you think 'bon' in bonjour means?"
-     (("umm I don't know..." 
-       ((azk . ("it means 'good'" 
-		(("ahh.."))))))
-      ("I guess it means good"
-       ((azk . ("awesome" 
-		(("thanks")))))))
-      ((label . complicatednode)))
-    ("Ok now what might 'jour' mean?"
-     (("night" 
-       ((azk . ("not quite" 
-		(("sorry.."))))))
-      ("day! it means day!" 
-       ((azk . ("awesome" 
-	       (("thanks!"))))))))
-    ("too complicated" 
-     (("yes!" 
-       ((goto . bonjour)))
-      ("not really")))))
-
 
 (define texxt 
 "
@@ -111,10 +71,19 @@
 @Nope!
 ?Well then you're the yellow one!")
 
-
-
 (define-struct qnode (text responses label) #:transparent)
 (define-struct qresp (text node score goto) #:transparent) 
+
+(define (find-label nodes lbl)
+  (memf (lambda (node)
+           (and (qnode-label node)
+                (string=? (qnode-label node) lbl)))
+         nodes))
+
+;utility fn          
+(define (is-helper text chr)
+  (and (> (string-length text) 0)
+       (char=? chr (string-ref text 0))))
 
 (define (is-question? text)
   (or  (is-helper text #\?)))
@@ -125,7 +94,6 @@
 (define (is-score? text)
   (is-helper text #\+))
 
-;;bad bad code!!!
 (define (is-labelled? text)
   (regexp-match #rx".\\[.*\\].*" text))
 
@@ -135,12 +103,10 @@
     ((char=? (car chars) char) count)
     (else (string-find-index (cdr chars) char (add1 count)))))
 
-;common for both questions and answers
+;common for both questions and answers 
+;is not defined for text that don't have a label.
 (define (get-label text)
   (substring text 2 (string-find-index (string->list text) #\])))
-
-(define (is-goto? text)
-  (regexp-match #rx"\\@\\[.*\\].*" text))
 
 (define (build-text lst)
   (string-join (cons
@@ -154,7 +120,6 @@
                  (+ 1 (string-find-index (string->list text) #\]))
                  (string-length text))
       (substring text 1 (string-length text))))
-
                 
 (define (get-question list-text (found? #f) (acc '()))
   (if (or (null? list-text)
@@ -173,7 +138,7 @@
                 (is-score? (car lst))
                 (if (is-labelled? (car lst)) (get-label (car lst)) #f))))
 
-(define (get-response list-text (found? #f) (acc '()) (node '()))
+(define (get-response list-text (found? #f) (acc '()) (node #f))
   (if (or (null? list-text)
           (is-question? (car list-text))
           (and (is-response? (car list-text)) found? ))
@@ -185,10 +150,6 @@
               (let-values ([(nd nm) (get-node azk)])
                 (values (build-qresp (reverse acc) nd) rst)))
             (get-response (cdr list-text) #t (cons curr acc))))))
-            
-(define (is-helper text chr)
-  (and (> (string-length text) 0)
-       (char=? chr (string-ref text 0))))
 
 ;;move the length of indent and check for ?
 (define (is-question-indent? text)

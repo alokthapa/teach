@@ -5,13 +5,38 @@
 (require web-server/http/cookie)
 (require web-server/http/cookie-parse)
 (require xml)
-(require "node.ss")
 (require "structs.ss")
 (require "parse.ss")
 
 
 
 (provide (all-defined-out))
+
+
+;--markdown related
+
+(define (get-markdown-port text)
+  (car (process (string-append "echo \"" text "\" | perl /Users/alokthapa/hacking/scheme/teach/Markdown.pl -html4tags"))))
+
+(define (markdown text) (string-append "<p>" text "</p>"))
+(define (markdown1 text)
+  (call/cc (lambda (ezit)
+             (let ((inputport (get-markdown-port text))
+                   (out-value ""))
+               (letrec ((A (lambda ()
+                             (let ((val (read-line inputport)))
+                               (if (eof-object? val)
+                                   (ezit out-value)
+                                   (begin
+                                    
+                                     (set! out-value (string-append out-value val))
+                                     (A)))))))
+                 (A))))))
+
+
+
+;--
+
 
 (define (make-user-cookie usr)
   (make-cookie "id" (user-name usr)))
@@ -51,88 +76,84 @@
 
 
 (define (convert-to-xexpr text)
-  (string->xexpr text))
-;  (xml->xexpr (document-element (read-xml (open-input-string text)))))
+  (string->xexpr (markdown text)))
 
-(define (show-nodz st n orig-nodes request)
+(define (show-nodes st n orig-nodes request)
   (local [(define (azk-curr) (car n))
-	  (define (node-rezp resp url)
-	    `(div ((class "node-resp")
-		   (onclick ,(string-append "javascript:window.location='" url "'")))
-		  (a ((href ,url))
-                     ,(convert-to-xexpr (rezp-text resp)))))
-
-	  (define (response-generator embed/url)
-	    (common-layout 
-	     request
-	     `(div ((class "node-main"))
-		   (div ((class "node-ask"))
-                        ,(convert-to-xexpr (azk-q (azk-curr))))
-		   ,(if (azk-rezps? (azk-curr))
-			 `(div ((class "nodes-resps"))
-			      ,@(map (lambda (r)
-				       (let ((em (embed/url (new-node-location r))))
-					 (node-rezp r em)))
-				     (azk-rezps (azk-curr))))
-			 `(p)))))
-	  (define (score1 st)
-	    (if (eq? (car st) 'no-score-value)
-		(list 1 (cdr st))
-		(list (+ 1 (car st))
-		      (cdr st))))
+          (define (node-resp resp url)
+            `(div ((class "node-resp")
+                   (onclick ,(string-append "javascript:window.location='" url "'")))
+                  (a ((href ,url))
+                     ,(convert-to-xexpr (qresp-text resp)))))
+          (define (response-generator embed/url)
+            (common-layout 
+             request
+             `(div ((class "node-main"))
+                   (div ((class "node-ask"))
+                        ,(convert-to-xexpr (qnode-text (azk-curr))))
+                   ,(if (pair? (qnode-responses (azk-curr)))
+                        `(div ((class "nodes-resps"))
+                              ,@(map (lambda (r)
+                                       (let ((em (embed/url (new-node-location r))))
+                                         (node-resp r em)))
+                                     (qnode-responses (azk-curr))))
+                        `(p)))))
+          (define (score1 st)
+            (if (eq? st 'no-score-value)
+                1
+                (add1 st)))
           (define (new-node-location resp)
-            (let ((action (rezp-action resp))
-		  (newst (if (scores? resp) (score1 st) st)))
+            (let ((newst (if (qresp-score resp) 
+                             (score1 st) st)))
               (lambda (req)
                 (cond
-                 ((null? action) (show-nodz newst (cdr n) orig-nodes req))
-                 ((atom? action) 
-		  (cond 
-		   ((eq? action 'home) (show-nodz newst orig-nodes orig-nodes req))
-		   (else ((show-nodz newst (find-azk action orig-nodes) orig-nodes req)))))
-                 ((pair? action) (show-nodz newst (cons action (cdr n)) orig-nodes req))))))
-
+                  ((qresp-goto resp)
+                   (show-nodes newst (find-label orig-nodes (qresp-goto resp)) orig-nodes req))
+                  ((qresp-node resp)
+                   (show-nodes newst (cons (qresp-node resp) (cdr n)) orig-nodes req))
+                  (else  (show-nodes newst (cdr n) orig-nodes req))))))
           (define (end-of-show needless)
             (common-layout 
-	     request
+             request
              `(div ((class "node-main"))
                    (div ((class "node-ask"))
                         (p "end of class")
-			(p ,(if (eq? (car st) 'no-score-value) 
-				""
-				(string-append "your score is " (number->string (car st)))))))))]
+                        (p ,(if (eq? st 'no-score-value) 
+                                ""
+                                (string-append "your score is " (number->string st))))))))]
 	   (if (pair? n)
-	       (send/suspend/dispatch response-generator)
-	       (send/suspend/dispatch end-of-show))))
+               (send/suspend/dispatch response-generator)
+               (send/suspend/dispatch end-of-show))))
+
 
 (define (login request)
   (local [(define (parse-username bindings)
-	    (extract-binding/single 'username bindings))
-	  (define (parse-password bindings)
-	    (extract-binding/single 'password bindings))
-	  (define (login-handler request)
-	    (let* ((binds (request-bindings request))
-		   (usr (find-user (parse-username binds))))
-	      (if (and usr 
-		       (string=? (parse-password binds)
-				 (user-pwd usr)))
-		  (send/suspend (lambda (k-url)
-				  (response/xexpr
-				   #:headers (map cookie->header (list (make-user-cookie usr)))
-				   `(html (body (p "welcome!"))))))
-		  (send/suspend/dispatch login))))
-	  (define (response-generator make-url)
-	    (response/xexpr
-	     `(html
-	       (head 
-		(title "login"))
-	       (body 
-		(h1 "Login")
-		(form ((action ,(make-url login-handler)))
-		      (input ((name "username")))
-		      (input ((name "password")))
-		      (input ((type "submit"))))))))]
-	 (send/suspend/dispatch response-generator)))
+            (extract-binding/single 'username bindings))
+          (define (parse-password bindings)
+            (extract-binding/single 'password bindings))
+          (define (login-handler request)
+            (let* ((binds (request-bindings request))
+                   (usr (find-user (parse-username binds))))
+              (if (and usr 
+                       (string=? (parse-password binds)
+                                 (user-pwd usr)))
+                  (send/suspend (lambda (k-url)
+                                  (response/xexpr
+                                   #:headers (map cookie->header (list (make-user-cookie usr)))
+                                   `(html (body (p "welcome!"))))))
+                  (send/suspend/dispatch login))))
+          (define (response-generator make-url)
+            (response/xexpr
+             `(html
+               (head 
+                (title "login"))
+               (body 
+                (h1 "Login")
+                (form ((action ,(make-url login-handler)))
+                      (input ((name "username")))
+                      (input ((name "password")))
+                      (input ((type "submit"))))))))]
+    (send/suspend/dispatch response-generator)))
 
 ;;st -> state is a list of score and objs collected. 
 
@@ -142,17 +163,17 @@
 	    (common-layout 
 	     request
 	     `(div ((class "welcome-div"))
-               (div (a ((href ,(make-url (lambda (req) (nodestart math-nodes req)))))
+               (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text mathtoo) req)))))
 		       "math problems"))
-	       (div (a ((href ,(make-url (lambda (req) (nodestart angry-birds req)))))
+	       (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text texxt) req)))))
 		       "angry birds problems"))
 
-	       (div (a ((href ,(make-url (lambda (req) (nodestart new-nodes req)))))
+	       (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text frenchtoo) req)))))
 		       "learning french example")))))]
 	 (send/suspend/dispatch response-generator)))
 
 (define (nodestart n request)
-  (show-nodz (list 'no-score-value (list)) n n request))
+  (show-nodes 'no-score-value n n request))
 
 (define (logout request)
   (response/xexpr 
@@ -168,7 +189,7 @@
        [("hello") welcome]
        [("login") login]
        [("logout") logout]
-       [("angry") (lambda (req) (nodestart parsed-angry req))]
+       [("angry") (lambda (req) (nodestart (parse-text texxt) req))]
        [else page404]))
 
 ;;TODO extra-files-path is not working, so no css is being loaded at the moment, however we could always run them in xginx or s;;3 buckets so no big deal, though would be nice if we get it to work.
