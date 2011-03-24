@@ -18,7 +18,7 @@
 (define (get-markdown-port text)
   (car (process (string-append "echo \"" text "\" | perl /Users/alokthapa/hacking/scheme/teach/Markdown.pl -html4tags"))))
 
-(define (markdown text) (string-append "<p>" text "</p>"))
+(define (markdown text) (string-append "<div>" (markdown1 text) "</div>"))
 (define (markdown1 text)
   (call/cc (lambda (ezit)
              (let ((inputport (get-markdown-port text))
@@ -160,17 +160,18 @@
 
 (define (welcome request)
   (local [(define (response-generator make-url)
-	    (common-layout 
-	     request
-	     `(div ((class "welcome-div"))
-               (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text mathtoo) req)))))
-		       "math problems"))
-	       (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text texxt) req)))))
-		       "angry birds problems"))
-
-	       (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text frenchtoo) req)))))
-		       "learning french example")))))]
-	 (send/suspend/dispatch response-generator)))
+            (common-layout 
+             request
+             `(div ((class "welcome-div"))
+                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text mathtoo) req)))))
+                           "math problems"))
+                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text texxt) req)))))
+                           "angry birds problems"))
+                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text frenchtoo) req)))))
+                           "learning french problems"))
+                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text markdown-text) req)))))
+                           "markdown sample")))))]
+    (send/suspend/dispatch response-generator)))
 
 (define (nodestart n request)
   (show-nodes 'no-score-value n n request))
