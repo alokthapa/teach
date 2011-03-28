@@ -8,18 +8,23 @@
   ([name type:string]
    [pwd type:string]))
 
-(define-persistent-struct teachpack
-  ([name type:string]))
-
-(define-persistent-struct user-teachpack
+(define-persistent-struct quickquiz
   ([user-id type:integer]
-   [teachpack-id type:integer]
-   [current type:integer]))
+   [name type:string]
+   [data type:string]
+   [style type:string]))
+  
 
-(define-persistent-struct lesson
-  ([name type:string]
+(define-persistent-struct teachpack
+  ([user-id type:integer]
+   [name type:string]))
+
+(define-persistent-struct section
+  ((teachpack-id type:string)
+   [name type:string]
    [order type:integer]
-   [data type:string]))
+   [data type:string]
+   [style type:string]))
 
   
 ;;create all tables
@@ -29,8 +34,8 @@
    (lambda ()
      (create-table user)
      (create-table teachpack)
-     (create-table user-teachpack)
-     (create-table lesson))))
+     (create-table quickquiz)
+     (create-table section))))
 
 ;;destroy all tables
 (define (destroy-db)
@@ -38,8 +43,8 @@
    (lambda ()
      (drop-table user)
      (drop-table teachpack)
-     (drop-table user-teachpack)
-     (drop-table lesson))))
+     (drop-table quickquiz)
+     (drop-table section))))
 
 (define (add-dummy-users)
   (call-with-connection
@@ -47,7 +52,22 @@
    (save! (make-user "alok" "123"))
    (save! (make-user "al" "123")))))
 
-
 (define (find-user name)
   (find-one (sql (select #:from user #:where (= user.name ,name)))))
 
+(define (get-teachpacks-for-user userid)
+  (find-all (sql (select #:from teachpack #:where (= teachpack.user-id ,userid)))))
+
+(define (get-quickquiz-for-user userid)
+  (find-all (sql (select #:from quickquiz #:where (= quickquiz.user-id ,userid)))))
+
+
+(define (create-teachpack! userid tpname)
+  (save! (make-teachpack userid tpname)))
+
+(define (create-quickquiz! userid qqname data style)
+  (save! (make-quickquiz userid qqname data style)))
+
+
+(define (get-sections-for-teachpack tpid)
+  (find-all (sql (select #:from section #:where (= section.teachpack-id ,tpid)))))

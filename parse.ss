@@ -87,6 +87,10 @@ Or, if you prefer, __use two underscores instead__.
 
 (define texxt 
 "
+?
+
+<img src='http://www.androidtapp.com/wp-content/uploads/2010/11/Angry_Birds_Plushies.png' height='500' width='500' />
+@Let's Go!
 ?Do you feel like you're good for nothing???????
 @Yes
     ?Are you kinda big?
