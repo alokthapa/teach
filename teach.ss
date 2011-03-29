@@ -4,6 +4,7 @@
 (require web-server/servlet-env)
 (require web-server/http/cookie)
 (require web-server/http/cookie-parse)
+(require web-server/http/redirect)
 (require xml)
 (require "parse.ss")
 (require "model.ss")
@@ -117,7 +118,7 @@
                   ((qresp-node resp)
                    (show-nodes newst (cons (qresp-node resp) (cdr n)) orig-nodes req))
                   (else  (show-nodes newst (cdr n) orig-nodes req))))))
-          (define (end-of-show needless)
+          (define (end-of-show _)
             (common-layout 
              request
              `(div ((class "node-main"))
@@ -139,14 +140,13 @@
           (define (login-handler request)
             (let* ((binds (request-bindings request))
                    (usr (find-user (parse-username binds))))
-              (if (and usr 
+              (when (and usr 
                        (string=? (parse-password binds)
                                  (user-pwd usr)))
                   (send/suspend (lambda (k-url)
                                   (response/xexpr
                                    #:headers (map cookie->header (list (make-user-cookie usr)))
-                                   `(html (body (p "welcome!"))))))
-                  (send/suspend/dispatch login))))
+                                   `(html (body (p "welcome!")))))))))
           (define (response-generator make-url)
             (response/xexpr
              `(html
@@ -174,46 +174,6 @@
                ,(section-name sec)))
        sections)))
 
- (define (range a b)
-	(if (> a b)	
-	'()	
-	(cons a (range (add1 a) b))))
-
-(define (with-input fn-after page-after)
-  (lambda (request)
-    (local [(define (response-generator make-url)
-              (common-layout
-               request
-               `(form ((action ,(make-url handler)))
-                      ,@(map (lambda (i)
-                               `(input ((name ,(string-append "input" (number->string i))))))
-                             (range 1 (procedure-arity fn-after)))
-                      (input ((type "submit"))))))
-            (define (handler req)
-              (let ((binds (request-bindings req)))
-                (apply fn-after (map (lambda (i)
-                                 (extract-binding/single (string->symbol (string-append "input" (number->string i))) binds))
-                               (range 1 (procedure-arity fn-after))))
-                (serve/dispatch page-after)))]
-            (send/suspend/dispatch response-generator))))
-             
-
-(define (single-input-get request fn-after page-after)
-  (local [(define (parse-input bindings)
-            (extract-binding/single 'textinput bindings))
-          (define (handler req)
-            (let ((binds (request-bindings req))
-                  (usr (get-user-from-cookie req)))
-              (fn-after (user-id usr) (parse-input binds))
-              (serve/dispatch page-after)))
-          (define (response-generator make-url)
-            (common-layout
-             request
-             `(form ((action ,(make-url handler)))
-                    (input ((name "textinput")))
-                    (input ((type "submit"))))))]
-    (send/suspend/dispatch response-generator)))
-               
 (define (create-quickquiz request)
    (local [(define (parse-qqname bindings)
             (extract-binding/single 'qqname bindings))
@@ -223,7 +183,7 @@
             (let ((binds (request-bindings req))
                   (usr (get-user-from-cookie req)))
               (create-quickquiz! (user-id usr) (parse-qqname binds) (parse-qqdata binds) "score" )
-              (serve/dispatch dashboard)))
+              (redirect-to (teach-url dashboard))))          
           (define (response-generator make-url)
             (common-layout
              request
@@ -233,7 +193,6 @@
                     (input ((type "submit"))))))]
     (send/suspend/dispatch response-generator)))
   
-  
 (define (create-teachpack request)
   (local [(define (parse-teachpackname bindings)
             (extract-binding/single 'teachname bindings))
@@ -241,7 +200,7 @@
             (let ((binds (request-bindings req))
                   (usr (get-user-from-cookie req)))
               (create-teachpack!(user-id usr) (parse-teachpackname binds))
-              (serve/dispatch dashboard)))
+              (redirect-to (teach-url dashboard))))          
           (define (response-generator make-url)
             (common-layout
              request
