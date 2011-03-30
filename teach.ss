@@ -140,13 +140,17 @@
           (define (login-handler request)
             (let* ((binds (request-bindings request))
                    (usr (find-user (parse-username binds))))
-              (when (and usr 
+              (if (and usr 
                        (string=? (parse-password binds)
                                  (user-pwd usr)))
                   (send/suspend (lambda (k-url)
                                   (response/xexpr
                                    #:headers (map cookie->header (list (make-user-cookie usr)))
-                                   `(html (body (p "welcome!")))))))))
+                                   `(html 
+                                     (head
+                                       (meta ((http-equiv "refresh") (content "0;url=/dashboard"))))
+                                     (body (p "please wait..."))))))
+                  (redirect-to (teach-url login)))))
           (define (response-generator make-url)
             (response/xexpr
              `(html
