@@ -52,6 +52,12 @@
    (save! (make-user "alok" "123"))
    (save! (make-user "al" "123")))))
 
+(define (create-user! name pwd)
+  (call-with-connection
+   (lambda ()
+     (save! (make-user name pwd))))
+  (find-user name))
+
 (define (find-user name)
   (find-one (sql (select #:from user #:where (= user.name ,name)))))
 
@@ -61,6 +67,10 @@
 (define (get-quickquiz-for-user userid)
   (find-all (sql (select #:from quickquiz #:where (= quickquiz.user-id ,userid)))))
 
+(define (get-quickquiz-from-id id)
+  (find-one (sql (select #:from quickquiz #:where (= quickquiz.id ,id)))))
+(define (get-all-quickquiz)
+  (find-all (sql (select #:from quickquiz))))
 
 (define (create-teachpack! userid tpname)
   (save! (make-teachpack userid tpname)))

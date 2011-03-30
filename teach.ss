@@ -62,7 +62,7 @@
         `(a ((href ,(teach-url logout))) ,(string-append (user-name usr)  "--logout"))
         `(a ((href ,(teach-url login))) "login"))))
 
-(define (common-layout req body)
+(define (common-layout req #:scripts (scripts '()) body)
   (response/xexpr
    `(html
      (head
@@ -70,8 +70,7 @@
       (link ((href "/style/teach.css") (rel "stylesheet") ( type "text/css")))
       (script ((src "/js/jquery-1.5.min.js")) "")
       (script ((src "/js/jquery.hotkeys.js")) "")
-      (script ((src "/js/underscore.js")) "")
-      (script ((src "/js/proper.js")) ""))
+      ,@(map (lambda (s) `(script ((src ,s)) "")) scripts))
      (body ((class "all"))
 	   (div ((class "main"))
 		(div ((class "head"))
@@ -132,37 +131,68 @@
                (send/suspend/dispatch end-of-show))))
 
 
-(define (login request)
+(define (login request )
   (local [(define (parse-username bindings)
             (extract-binding/single 'username bindings))
           (define (parse-password bindings)
             (extract-binding/single 'password bindings))
+          (define (parse-rpassword bindings)
+            (extract-binding/single 'rpassword bindings))
+          (define (redirect-to-dashboard usr)
+            (send/suspend (lambda _
+                            (response/xexpr
+                             #:headers (map cookie->header (list (make-user-cookie usr)))
+                             `(html 
+                               (head
+                                (meta ((http-equiv "refresh") (content "0;url=/dashboard"))))
+                               (body (p "please wait...")))))))
+          (define (register-handler request)
+            (let* ((binds (request-bindings request))
+                   (existing-usr (find-user (parse-username binds))))
+              (cond
+                (existing-usr (send/suspend/dispatch (response-generator "The user already exists. Please select another")))
+                ((string=? (parse-password binds)
+                           (parse-rpassword binds))
+                 (redirect-to-dashboard (create-user! (parse-username binds) (parse-password binds))))
+                (else (send/suspend/dispatch (response-generator "Passwords don't match"))))))
           (define (login-handler request)
             (let* ((binds (request-bindings request))
                    (usr (find-user (parse-username binds))))
               (if (and usr 
                        (string=? (parse-password binds)
                                  (user-pwd usr)))
-                  (send/suspend (lambda (k-url)
-                                  (response/xexpr
-                                   #:headers (map cookie->header (list (make-user-cookie usr)))
-                                   `(html 
-                                     (head
-                                       (meta ((http-equiv "refresh") (content "0;url=/dashboard"))))
-                                     (body (p "please wait..."))))))
-                  (redirect-to (teach-url login)))))
-          (define (response-generator make-url)
-            (response/xexpr
-             `(html
-               (head 
-                (title "login"))
-               (body 
-                (h1 "Login")
-                (form ((action ,(make-url login-handler)))
-                      (input ((name "username")))
-                      (input ((name "password")))
-                      (input ((type "submit"))))))))]
-    (send/suspend/dispatch response-generator)))
+                  (redirect-to-dashboard usr)
+                  (send/suspend/dispatch (response-generator "Invalid username or password")))))
+          (define (response-generator (msg ""))
+            (lambda (make-url)
+              (common-layout
+               request
+               `(div ((class "login-div"))
+                     (p ,msg)
+                     (h1 "Login")
+                     (form ((action ,(make-url login-handler)))
+                           (table 
+                            (tr
+                             (td (p "username"))
+                             (td (input ((name "username")))))
+                            (tr
+                             (td (p "password"))
+                             (td (input ((name "password"))))))
+                           (input ((type "submit"))))
+                     (h1 "Register")
+                     (form ((action ,(make-url register-handler)))
+                           (table
+                            (tr
+                             (td (p "username"))
+                             (td (input ((name "username")))))
+                            (tr
+                             (td (p "password"))
+                             (td (input ((name "password") (type "password")))))
+                            (tr
+                             (td (p "confirm password"))
+                             (td (input ((name "rpassword")(type "password"))))))
+                           (input ((type "submit"))))))))]
+    (send/suspend/dispatch (response-generator))))
 
 ;;st -> state is a list of score and objs collected. 
 
@@ -190,10 +220,12 @@
               (redirect-to (teach-url dashboard))))          
           (define (response-generator make-url)
             (common-layout
+             #:scripts '("/js/underscore.js" "/js/proper.js" "/js/edit.js")
              request
              `(form ((method "post") (action ,(make-url handler)))
-                    (label () "Name") (input ((name "qqname"))) (br)
-                    (label () "Quiz") (textarea ((name "qqdata") (rows "10") (cols "80")) "")(br)
+                    (label () "Name") (input ((name "qqname")) "") (br)
+                    (label () "Quiz") 
+                    (textarea ((name "qqdata") (class "qqdata") (rows "20") (cols "80")) "")(br)
                     (input ((type "submit"))))))]
     (send/suspend/dispatch response-generator)))
   
@@ -213,7 +245,16 @@
                     (input ((type "submit"))))))]
     (send/suspend/dispatch response-generator)))
 
-(define (quickquiz-page qq request)
+(define (view-quiz request quizid)
+  (let ((quiz (get-quickquiz-from-id quizid)))
+    (if quiz
+        (nodestart (parse-text (quickquiz-data quiz)) request)
+        (common-layout
+         request
+         `(div "not found")))))
+         
+
+  (define (quickquiz-page qq request)
   (local [(define (response-generator make-url)
             (common-layout
              request
@@ -227,6 +268,17 @@
 
 (define (newline->br str)
   (regexp-replace* #rx"\n" str "<br/>"))
+
+(define (publicquiz request)
+  (local [(define (response-generator make-url)
+            (common-layout
+             request
+             `(div 
+               (h1 "Take a quiz")
+               ,@(map (lambda (q) `(div (a ((href ,(string-append "/quiz/" (number->string (quickquiz-id q)))))
+                                      ,(quickquiz-name q))))
+                      (get-all-quickquiz)))))]
+    (send/suspend/dispatch response-generator)))
 
 (define (teachpack-page tp request)
   (local [(define (response-generator make-url)
@@ -279,6 +331,10 @@
             (common-layout 
              request
              `(div ((class "welcome-div"))
+                   (h1 "Take a quiz")
+                   ,@(map (lambda (q) `(div (a ((href ,(string-append "/quiz/" (number->string (quickquiz-id q)))))
+                                      ,(quickquiz-name q))))
+                      (get-all-quickquiz))
                    (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text mathtoo) req)))))
                            "math problems"))
                    (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text texxt) req)))))
@@ -304,9 +360,11 @@
 (define-values (teach-dispatch teach-url)
       (dispatch-rules
        [("dashboard") dashboard]
+       [("play") publicquiz]
        [("hello") welcome]
        [("login") login]
        [("logout") logout]
+       [("quiz" (string-arg)) view-quiz]
        [("angry") (lambda (req) (nodestart (parse-text texxt) req))]))
 
 ;;TODO extra-files-path is not working, so no css is being loaded at the moment, however we could always run them in xginx or s;;3 buckets so no big deal, though would be nice if we get it to work.
