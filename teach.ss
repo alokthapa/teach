@@ -50,16 +50,19 @@
 (define (get-user-from-cookie req)
   (let ((cooks (request-cookies req)))
     (if (pair? cooks)
-	(find-user (client-cookie-value (findf (lambda (c)
-			    (and (client-cookie-name c)
-				 (string=? "id" (client-cookie-name c))))
-			  cooks)))
-	#f)))
+        (find-user 
+         (client-cookie-value 
+          (findf (lambda (c)
+                   (and (client-cookie-name c)
+                        (string=? "id" (client-cookie-name c))))
+                 cooks)))
+        #f)))
 
 (define (login/out req)
   (let ((usr (get-user-from-cookie req)))
     (if usr
-        `(a ((href ,(teach-url logout))) ,(string-append (user-name usr)  "--logout"))
+        `(span (a ((href ,(teach-url dashboard))) ,(user-name usr))
+               (a ((href ,(teach-url logout))) "--logout"))
         `(a ((href ,(teach-url login))) "login"))))
 
 (define (common-layout req #:scripts (scripts '()) body)
@@ -70,15 +73,15 @@
       (link ((href "/style/teach.css") (rel "stylesheet") ( type "text/css")))
       (script ((src "/js/jquery-1.5.min.js")) "")
       (script ((src "/js/jquery.hotkeys.js")) "")
+      (link ((rel "stylesheet") (type "text/css") (href "http://yui.yahooapis.com/2.8.2r1/build/grids/grids-min.css")))
       ,@(map (lambda (s) `(script ((src ,s)) "")) scripts))
-     (body ((class "all"))
-	   (div ((class "main"))
-		(div ((class "head"))
-		     (a ((href "/hello")) "satori ")
+     (body
+	   (div ((id "doc"))
+                (div ((id "hd")(class "head"))
+                     (a ((href "/index")) "satori ")
                      ,(login/out req))
-                ,body)))))
-;; pages
-
+                (div ((id "bd")) ,body)
+                (div ((id "ft")) "satoriapp.com"))))))
 
 (define (convert-to-xexpr text)
   (string->xexpr (markdown text)))
@@ -130,6 +133,14 @@
                (send/suspend/dispatch response-generator)
                (send/suspend/dispatch end-of-show))))
 
+(define (logout request)
+  (response/xexpr 
+   #:headers (map cookie->header (list (make-logout-cookie)))
+   `(html 
+     (head
+      (meta ((http-equiv "refresh") (content "0;url=/index"))))
+     (body (p "please wait...")))))
+
 
 (define (login request )
   (local [(define (parse-username bindings)
@@ -150,11 +161,13 @@
             (let* ((binds (request-bindings request))
                    (existing-usr (find-user (parse-username binds))))
               (cond
-                (existing-usr (send/suspend/dispatch (response-generator "The user already exists. Please select another")))
+                (existing-usr (send/suspend/dispatch (response-generator "The user already exists. Please select another.")))
                 ((string=? (parse-password binds)
                            (parse-rpassword binds))
                  (redirect-to-dashboard (create-user! (parse-username binds) (parse-password binds))))
-                (else (send/suspend/dispatch (response-generator "Passwords don't match"))))))
+                ((string=? (parse-username binds) "")
+                 (send/suspend/dispatch (response-generator "Invalid username.")))
+                (else (send/suspend/dispatch (response-generator "Passwords don't match."))))))
           (define (login-handler request)
             (let* ((binds (request-bindings request))
                    (usr (find-user (parse-username binds))))
@@ -162,7 +175,7 @@
                        (string=? (parse-password binds)
                                  (user-pwd usr)))
                   (redirect-to-dashboard usr)
-                  (send/suspend/dispatch (response-generator "Invalid username or password")))))
+                  (send/suspend/dispatch (response-generator "Invalid username or password.")))))
           (define (response-generator (msg ""))
             (lambda (make-url)
               (common-layout
@@ -228,6 +241,29 @@
                     (textarea ((name "qqdata") (class "qqdata") (rows "20") (cols "80")) "")(br)
                     (input ((type "submit"))))))]
     (send/suspend/dispatch response-generator)))
+
+(define (edit-quickquiz qq request)
+   (local [(define (parse-qqname bindings)
+            (extract-binding/single 'qqname bindings))
+           (define (parse-qqdata bindings)
+            (extract-binding/single 'qqdata bindings))
+          (define (handler req)
+            (let ((binds (request-bindings req))
+                  (usr (get-user-from-cookie req)))
+              (set-quickquiz-name! qq (parse-qqname binds))
+              (set-quickquiz-data! qq (parse-qqdata binds))
+              (update-quickquiz! qq)
+              (redirect-to (teach-url dashboard))))          
+          (define (response-generator make-url)
+            (common-layout
+             #:scripts '("/js/underscore.js" "/js/proper.js" "/js/edit.js")
+             request
+             `(form ((method "post") (action ,(make-url handler)))
+                    (label () "Name") (input ((name "qqname" ) (value ,(quickquiz-name qq)))) (br)
+                    (label () "Quiz") 
+                    (textarea ((name "qqdata") (class "qqdata") (rows "20") (cols "80")) ,(quickquiz-data qq))(br)
+                    (input ((type "submit"))))))]
+    (send/suspend/dispatch response-generator)))
   
 (define (create-teachpack request)
   (local [(define (parse-teachpackname bindings)
@@ -291,41 +327,63 @@
     (send/suspend/dispatch response-generator))) 
 
 (define (create-and-list header make-url objs fn-create fn-obj fn-name)
-  `(div ((style "padding:5px;margin:5px;background-color:white"))
+  `(div 
     (h1 ,header)
-    (a ((href ,(make-url fn-create))) "Create New")
+    (a ((class "create") (href ,(make-url fn-create))) "Create New")
+    (p)
     (div
      ,@(map (lambda (obj)
               `(div ((class "list"))
                     (a ((href ,(make-url (lambda (r) (fn-obj obj r)))))
                        ,(fn-name obj))))
             objs))))
-    
+
+
+(define (create-or-edit-quickquiz make-url objs)
+  `(div
+    (h1 "Quickquiz")
+    (a ( (class "create") (href ,(make-url create-quickquiz))) "Create New")
+    (p)
+    (div 
+     ,@(map (lambda (obj)
+              `(div ((class "list"))
+                    ,(string-append (quickquiz-name obj) "  ")
+                    (a ((href ,(make-url (lambda (r) (edit-quickquiz obj r)))))
+                       "edit")
+                     (a ((href ,(make-url (lambda (r) (begin
+                                                        (delete-quickquiz! obj)
+                                                        (dashboard r))))))
+                       "delete")
+                    (a ((href ,(string-append "/quiz/" (number->string (quickquiz-id obj)))))
+                       "run")))
+            objs))))
    
 (define (dashboard request)
   (let ((usr (get-user-from-cookie request)))
-    (local [(define (build-teachpack make-url)
-              (create-and-list "QuickQuiz"
-                               make-url
-                               (get-quickquiz-for-user (user-id usr))
-                               create-quickquiz
-                               quickquiz-page
-                               quickquiz-name))
-              (define (build-quickquiz make-url)
-                (create-and-list "TeachPacks" 
-                                 make-url 
-                                 (get-teachpacks-for-user (user-id usr))
-                                 create-teachpack
-                                 teachpack-page
-                                 teachpack-name))    
+    (local [(define (build-quickquiz make-url)
+              (create-or-edit-quickquiz 
+               make-url
+               (get-quickquiz-for-user (user-id usr))))
+            (define (build-teachpack make-url)
+              (create-and-list "TeachPacks" 
+                               make-url 
+                               (get-teachpacks-for-user (user-id usr))
+                               create-teachpack
+                               teachpack-page
+                               teachpack-name))
+            (define (logintodo make-url)
+              (common-layout
+               request
+               `(div "You have to be logged in to do that")))
             (define (response-generator make-url)
               (common-layout
                request
                `(div ((class "dashboard-div"))
-                    ,(build-quickquiz make-url)
-                    ,(build-teachpack make-url))))]
-      (send/suspend/dispatch response-generator ))))
-                                   
+                     ,(build-quickquiz make-url))))]
+      (if usr
+          (send/suspend/dispatch response-generator )
+          (send/suspend/dispatch logintodo)))))
+
 (define (welcome request)
   (local [(define (response-generator make-url)
             (common-layout 
@@ -334,24 +392,11 @@
                    (h1 "Take a quiz")
                    ,@(map (lambda (q) `(div (a ((href ,(string-append "/quiz/" (number->string (quickquiz-id q)))))
                                       ,(quickquiz-name q))))
-                      (get-all-quickquiz))
-                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text mathtoo) req)))))
-                           "math problems"))
-                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text texxt) req)))))
-                           "angry birds problems"))
-                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text frenchtoo) req)))))
-                           "learning french problems"))
-                   (div (a ((href ,(make-url (lambda (req) (nodestart (parse-text markdown-text) req)))))
-                           "markdown sample")))))]
+                      (get-all-quickquiz)))))]
     (send/suspend/dispatch response-generator)))
 
 (define (nodestart n request)
   (show-nodes 'no-score-value n n request))
-
-(define (logout request)
-  (response/xexpr 
-   #:headers (map cookie->header (list (make-logout-cookie)))
-   `(p "you are logged out")))
 
 (define (page404 request)
   (response/xexpr 
@@ -361,7 +406,7 @@
       (dispatch-rules
        [("dashboard") dashboard]
        [("play") publicquiz]
-       [("hello") welcome]
+       [("index") welcome]
        [("login") login]
        [("logout") logout]
        [("quiz" (string-arg)) view-quiz]

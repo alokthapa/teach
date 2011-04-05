@@ -1,12 +1,68 @@
+body{
+  background-color: #F6F6F6;
+  color: #333;
+  font-family:"Helvetica Neue", "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, sans-serif !important
+}
 
+/* header */
+.head{
+    height:40px;
+    min-width: 490px;
+    vertical-align:baseline;
+    line-height:normal;
+    font-size:28px;
+    padding-left:20px;
+    
+}
+
+.head a{
+    text-decoration:none;
+    color: #333;
+}
+
+/* body  */
+#bd{
+  min-height:500px;
+  padding-top:10px;
+  padding-left:40px;
+}
+
+/* footer */
+
+
+
+/* index */
 .welcome-div div a{
     text-decoration:none;
-    color: white;
+    color:#333;
+    padding:5px; 
+}
+.welcome-div div{
+  padding:5px;
+}
+
+/* dashboard */
+
+.create{
+  text-decoration:none;
+  color:#333;
+  padding:5px; 
+  font-size:123.10%;
+}
+
+.list a{
+    text-decoration:none;
+    color:#333;
+    padding:5px; 
+}
+.list{
+  padding:5px;
 }
 
 
+/* quiz section */
 .node-main{
-    width:500px;
+    width:700px;
     padding:50px;
     margin:50px;
     background-color:#cccccc;
@@ -53,26 +109,3 @@
     padding:0px;
 }
 
-.head{
-    height:40px;
-    background-color:black;
-    color:white;
-    vertical-align:baseline;
-    font-face: "Arial, Verdana";
-    line-height:normal;
-    font-size:28px;
-    padding-left:50px;
-}
-
-.head a{
-    text-decoration:none;
-    color:white;
-
-}
-
-h1{
-    margin-left:50px;
-    padding-top:50px;
-    color:black;
-    font-face:"Helvetica Neue";
-}

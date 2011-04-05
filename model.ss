@@ -79,5 +79,14 @@
   (save! (make-quickquiz userid qqname data style)))
 
 
+(define (update-quickquiz! qq)
+  (call-with-connection
+   (lambda ()  (save! qq))))
+
+(define (delete-quickquiz! qq)
+  (call-with-connection
+   (lambda ()   (delete! qq))))
+
+
 (define (get-sections-for-teachpack tpid)
   (find-all (sql (select #:from section #:where (= section.teachpack-id ,tpid)))))
