@@ -50,13 +50,13 @@
 (define (get-user-from-cookie req)
   (let ((cooks (request-cookies req)))
     (if (pair? cooks)
-        (find-user 
-         (client-cookie-value 
-          (findf (lambda (c)
-                   (and (client-cookie-name c)
-                        (string=? "id" (client-cookie-name c))))
-                 cooks)))
-        #f)))
+        (let ((usrcook (findf (lambda (c) (and (client-cookie-name c)
+                                               (string=? "id" (client-cookie-name c))))
+                              cooks)))
+          (if usrcook
+              (find-user usrcook)
+              #f))
+          #f)))
 
 (define (login/out req)
   (let ((usr (get-user-from-cookie req)))
